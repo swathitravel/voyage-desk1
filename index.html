@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#3e3a47">
+  <title>Voyage Desk</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="loginScreen" class="center-screen">
+  <div class="login-card">
+    <div class="logo">✦</div>
+    <h1>Voyage Desk</h1>
+    <p>Your private, cloud-synced travel command center.</p>
+    <button id="googleSignInBtn">Sign in with Google</button>
+    <p id="loginMessage" class="muted"></p>
+  </div>
+</div>
+
+<div id="appShell" class="hidden">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo small">✦</div>
+      <div><h1>Voyage Desk</h1><p>Plan, track, budget, and travel</p></div>
+    </div>
+    <div class="top-actions">
+      <span id="syncStatus" class="sync">Saved</span>
+      <select id="activeTripSelect"></select>
+      <button id="signOutBtn" class="secondary">Sign out</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-view="dashboard" class="active">Dashboard</button>
+    <button data-view="trips">Trips</button>
+    <button data-view="itinerary">Itinerary</button>
+    <button data-view="reservations">Reservations</button>
+    <button data-view="budget">Budget</button>
+    <button data-view="checklist">Checklist</button>
+    <button data-view="packing">Packing</button>
+    <button data-view="documents">Documents</button>
+    <button data-view="places">Places</button>
+    <button data-view="contacts">Contacts</button>
+  </nav>
+
+  <main>
+    <section id="dashboard" class="view active">
+      <div class="hero card">
+        <div>
+          <span class="eyebrow">ACTIVE TRIP</span>
+          <h2 id="dashTripName">Create your first trip</h2>
+          <p id="dashTripMeta">Everything you need in one place.</p>
+        </div>
+        <div class="countdown"><strong id="daysUntil">—</strong><span>days until departure</span></div>
+      </div>
+
+      <div class="metrics">
+        <article class="card metric"><span>Budget remaining</span><strong id="budgetRemaining">$0</strong><small id="budgetPercent">0% used</small></article>
+        <article class="card metric"><span>Checklist</span><strong id="checklistProgress">0%</strong><small id="checklistCount">0 tasks</small></article>
+        <article class="card metric"><span>Packing</span><strong id="packingProgress">0%</strong><small id="packingCount">0 items</small></article>
+        <article class="card metric"><span>Reservations</span><strong id="reservationCount">0</strong><small>confirmed</small></article>
+      </div>
+
+      <div class="grid two">
+        <article class="card">
+          <div class="card-head"><h3>Next up</h3><button class="link-btn" onclick="switchView('itinerary')">View all</button></div>
+          <div id="nextItinerary" class="stack muted">No itinerary items yet.</div>
+        </article>
+        <article class="card">
+          <div class="card-head"><h3>Currency</h3><button class="link-btn" onclick="refreshRate()">Refresh</button></div>
+          <div class="currency-card">
+            <div><span>1 USD</span><strong id="rateDisplay">—</strong></div>
+            <div class="converter">
+              <label>USD amount<input id="quickUsd" type="number" min="0" step="0.01" value="100"></label>
+              <div class="converted"><span>Local estimate</span><strong id="quickLocal">—</strong></div>
+            </div>
+            <small id="rateUpdated">Choose a destination country.</small>
+          </div>
+        </article>
+        <article class="card">
+          <h3>Time zones</h3>
+          <div class="timezone-grid">
+            <div><span>Home</span><strong id="homeTime">—</strong></div>
+            <div><span>Destination</span><strong id="destinationTime">—</strong></div>
+          </div>
+        </article>
+        <article class="card">
+          <h3>Needs attention</h3>
+          <div id="attentionList" class="stack muted">Nothing pending.</div>
+        </article>
+      </div>
+    </section>
+
+    <section id="trips" class="view">
+      <div class="section-title"><div><h2>Trips</h2><p>Dream, planning, booked, current, and completed trips.</p></div><button onclick="openTripEditor()">New trip</button></div>
+      <div id="tripList" class="cards-list"></div>
+    </section>
+
+    <section id="itinerary" class="view">
+      <div class="section-title"><div><h2>Itinerary</h2><p>Daily plans, time zones, transit, addresses, links, and costs.</p></div><button onclick="openModal('itinerary')">Add plan</button></div>
+      <div id="itineraryList" class="day-list"></div>
+    </section>
+
+    <section id="reservations" class="view">
+      <div class="section-title"><div><h2>Reservations</h2><p>Flights, hotels, trains, tours, restaurants, transfers, and events.</p></div><button onclick="openModal('reservation')">Add reservation</button></div>
+      <div id="reservationList" class="cards-list"></div>
+    </section>
+
+    <section id="budget" class="view">
+      <div class="section-title"><div><h2>Budget</h2><p>Estimated and actual travel spending.</p></div><button onclick="openModal('expense')">Add expense</button></div>
+      <div class="metrics">
+        <article class="card metric"><span>Total budget</span><strong id="budgetTotal">$0</strong></article>
+        <article class="card metric"><span>Estimated</span><strong id="budgetEstimated">$0</strong></article>
+        <article class="card metric"><span>Actual</span><strong id="budgetSpent">$0</strong></article>
+        <article class="card metric"><span>Remaining</span><strong id="budgetRemain2">$0</strong></article>
+      </div>
+      <div id="expenseList" class="table-wrap card"></div>
+    </section>
+
+    <section id="checklist" class="view">
+      <div class="section-title"><div><h2>Checklist</h2><p>Travel tasks and deadlines.</p></div><button onclick="openModal('task')">Add task</button></div>
+      <div id="taskList" class="check-list card"></div>
+    </section>
+
+    <section id="packing" class="view">
+      <div class="section-title"><div><h2>Packing</h2><p>Items, quantities, travelers, and bag locations.</p></div><button onclick="openModal('packing')">Add item</button></div>
+      <div id="packingList" class="check-list card"></div>
+    </section>
+
+    <section id="documents" class="view">
+      <div class="section-title"><div><h2>Documents</h2><p>Passports, visas, OCI, insurance, and expiration dates.</p></div><button onclick="openModal('document')">Add document</button></div>
+      <div class="privacy-note">Store reference details rather than passport or visa scans.</div>
+      <div id="documentList" class="cards-list"></div>
+    </section>
+
+    <section id="places" class="view">
+      <div class="section-title"><div><h2>Places</h2><p>Attractions, restaurants, neighborhoods, shopping, and ideas.</p></div><button onclick="openModal('place')">Add place</button></div>
+      <div id="placeList" class="cards-list"></div>
+    </section>
+
+    <section id="contacts" class="view">
+      <div class="section-title"><div><h2>Contacts</h2><p>Embassies, insurance, airlines, hotels, family, and emergency services.</p></div><button onclick="openModal('contact')">Add contact</button></div>
+      <div id="contactList" class="cards-list"></div>
+    </section>
+  </main>
+</div>
+
+<dialog id="modal">
+  <form method="dialog" id="modalForm">
+    <div class="modal-head"><h3 id="modalTitle">Add item</h3><button value="cancel" class="icon-btn">×</button></div>
+    <div id="modalFields" class="form-grid"></div>
+    <div class="form-actions"><button value="cancel" class="secondary">Cancel</button><button type="submit" value="default">Save</button></div>
+  </form>
+</dialog>
+
+<dialog id="tripModal">
+  <form method="dialog" id="tripForm">
+    <div class="modal-head"><h3 id="tripModalTitle">New trip</h3><button value="cancel" class="icon-btn">×</button></div>
+    <div class="form-grid">
+      <label>Trip name<input name="name" required></label>
+      <label>Status<select name="status"><option>Dream</option><option>Planning</option><option>Booked</option><option>Current</option><option>Completed</option></select></label>
+      <label>Destination country<select name="country" id="countrySelect"></select></label>
+      <label>Primary city<input name="city"></label>
+      <label>Home time zone<select name="homeTimezone" id="homeTimezoneSelect"></select></label>
+      <label>Destination time zone<select name="destinationTimezone" id="destinationTimezoneSelect"></select></label>
+      <label>Start date<input name="startDate" type="date"></label>
+      <label>End date<input name="endDate" type="date"></label>
+      <label>Total budget (USD)<input name="budget" type="number" min="0" step="0.01"></label>
+      <label>Travelers<input name="travelers" type="number" min="1" value="1"></label>
+      <label>Accommodation base<input name="base"></label>
+      <label>Trip style<select name="style"><option>Solo</option><option>Group tour</option><option>Family</option><option>Friends</option><option>Business</option><option>Other</option></select></label>
+      <label class="wide">Notes<textarea name="notes"></textarea></label>
+    </div>
+    <div class="form-actions"><button value="cancel" class="secondary">Cancel</button><button type="submit" value="default">Save trip</button></div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast"></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
