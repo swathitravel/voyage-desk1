@@ -3,12 +3,12 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, setPe
 import { getFirestore, enableMultiTabIndexedDbPersistence, doc, onSnapshot, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBAx9HlyjhYMDKwE06UDaAr0eFibXRZfc0",
+  apiKey: "AIzaSyBAx9HlyjhYMDKwEO6UDaAr0eFibXRZfc0",
   authDomain: "voyage-desk-a8209.firebaseapp.com",
   projectId: "voyage-desk-a8209",
   storageBucket: "voyage-desk-a8209.firebasestorage.app",
   messagingSenderId: "342805242383",
-  appId: "1:342805242383:web:48918173db1a53ab2ef97a"
+  appId: "1:342805242383:web:746c5fa1307a79ad2ef97a"
 };
 
 const app = initializeApp(firebaseConfig);
