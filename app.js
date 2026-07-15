@@ -1,6 +1,6 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, setPersistence, browserLocalPersistence, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { getFirestore, enableMultiTabIndexedDbPersistence, doc, onSnapshot, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBAx9HlyjhYMDKwE06UDaAr0eFibXRZfc0",
@@ -14,7 +14,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
-const db = initializeFirestore(app, {localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})});
+provider.setCustomParameters({ prompt: "select_account" });
+const db = getFirestore(app);
+
+setPersistence(auth, browserLocalPersistence).catch(console.warn);
+enableMultiTabIndexedDbPersistence(db).catch((error) => {
+  // The app still works online if persistence is unavailable or another tab owns the cache.
+  console.warn("Offline persistence unavailable:", error.code);
+});
 
 const CURRENCIES={"United States":["USD","$"],"Canada":["CAD","C$"],"Mexico":["MXN","$"],"United Kingdom":["GBP","£"],"France":["EUR","€"],"Germany":["EUR","€"],"Italy":["EUR","€"],"Spain":["EUR","€"],"Netherlands":["EUR","€"],"Austria":["EUR","€"],"Hungary":["HUF","Ft"],"Czech Republic":["CZK","Kč"],"Switzerland":["CHF","CHF"],"Poland":["PLN","zł"],"United Arab Emirates":["AED","د.إ"],"India":["INR","₹"],"Jordan":["JOD","د.ا"],"Japan":["JPY","¥"],"South Korea":["KRW","₩"],"Thailand":["THB","฿"],"Singapore":["SGD","S$"],"Australia":["AUD","A$"],"New Zealand":["NZD","NZ$"],"Turkey":["TRY","₺"],"Egypt":["EGP","E£"]};
 const TIMEZONES=(()=>{try{return Intl.supportedValuesOf("timeZone")}catch{return["America/New_York","Europe/London","Europe/Budapest","Europe/Prague","Asia/Dubai","Asia/Kolkata","Asia/Tokyo"]}})();
@@ -37,7 +44,19 @@ function switchView(id){$$(".view").forEach(v=>v.classList.toggle("active",v.id=
 window.switchView=switchView;window.openTripEditor=openTripEditor;window.openModal=openModal;window.refreshRate=refreshRate;
 $("#tabs").addEventListener("click",e=>{if(e.target.dataset.view)switchView(e.target.dataset.view)});
 
-$("#googleSignInBtn").onclick=()=>signInWithPopup(auth,provider).catch(e=>$("#loginMessage").textContent=e.message);
+$("#googleSignInBtn").onclick = async () => {
+  $("#loginMessage").textContent = "Opening Google sign-in…";
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (error) {
+    if (["auth/popup-blocked", "auth/cancelled-popup-request", "auth/operation-not-supported-in-this-environment"].includes(error.code)) {
+      await signInWithRedirect(auth, provider);
+      return;
+    }
+    $("#loginMessage").textContent = `Firebase: ${error.message}`;
+    console.error(error);
+  }
+};
 $("#signOutBtn").onclick=()=>signOut(auth);
 
 onAuthStateChanged(auth,u=>{
@@ -131,3 +150,11 @@ function genericCards(type,id){const a=records(type),el=$(id);el.innerHTML=a.len
 function renderReservations(){genericCards("reservations","#reservationList")}function renderDocuments(){genericCards("documents","#documentList")}function renderPlaces(){genericCards("places","#placeList")}function renderContacts(){genericCards("contacts","#contactList")}
 function renderBudget(){const t=activeTrip(),a=records("expenses"),est=a.reduce((s,x)=>s+Number(x.estimated||0),0),spent=a.reduce((s,x)=>s+Number(x.actual||0),0),remain=Number(t?.budget||0)-spent;$("#budgetTotal").textContent=money(t?.budget);$("#budgetEstimated").textContent=money(est);$("#budgetSpent").textContent=money(spent);$("#budgetRemain2").textContent=money(remain);$("#expenseList").innerHTML=a.length?`<table class="data-table"><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Estimated</th><th>Actual</th><th>Status</th><th></th></tr></thead><tbody>${a.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.category)}</td><td>${esc(x.description)}</td><td>${money(x.estimated)}</td><td>${money(x.actual)}</td><td>${esc(x.payment)}</td><td><button class="icon-btn" onclick="removeRecord('expenses','${x.id}')">×</button></td></tr>`).join("")}</tbody></table>`:"<div class='muted'>No budget items yet.</div>"}
 function renderChecks(type,id){const a=records(type),el=$(id);el.innerHTML=a.length?a.map(x=>`<div class="check-row ${x.done?"done":""}"><input type="checkbox" ${x.done?"checked":""} onchange="toggleRecord('${type}','${x.id}')"><div class="check-text"><strong>${esc(x.name)}</strong><div class="meta"><span>${esc(x.category)}</span>${x.due?`<span>Due ${esc(x.due)}</span>`:""}${x.quantity?`<span>Qty ${esc(x.quantity)}</span>`:""}${x.bag?`<span>${esc(x.bag)}</span>`:""}</div></div><button class="icon-btn" onclick="removeRecord('${type}','${x.id}')">×</button></div>`).join(""):"<div class='muted' style='padding:14px'>Nothing added yet.</div>"}
+
+window.addEventListener("unhandledrejection", (event) => {
+  const message = event.reason?.message || String(event.reason || "");
+  if (message.includes("api-key-not-valid")) {
+    $("#loginMessage").textContent =
+      "Firebase rejected the web API key. Refresh once after this update. If it remains, check Google Cloud Console → APIs & Services → Credentials and make sure the Firebase browser key has not been deleted or disabled.";
+  }
+});
