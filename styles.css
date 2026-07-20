@@ -115,3 +115,9 @@
     grid-column: 1;
   }
 }
+
+.check-row .item-actions{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+@media(max-width:600px){
+  .check-row{grid-template-columns:auto 1fr}
+  .check-row .item-actions{grid-column:2;justify-content:flex-start}
+}
